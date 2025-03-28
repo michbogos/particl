@@ -13,3 +13,5 @@ CMakeUserPresets.json
 particl
 CPackConfig.cmake
 CPackSourceConfig.cmake
+*.comp.spv
+shader.hpp
