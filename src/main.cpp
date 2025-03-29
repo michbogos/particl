@@ -1,73 +1,46 @@
-#include "raylib.h"
+#include <bgfx/bgfx.h>
+#include <bgfx/platform.h>
+#include <GLFW/glfw3.h>
+#define GLFW_EXPOSE_NATIVE_X11
+#include <GLFW/glfw3native.h>
 
-//------------------------------------------------------------------------------------
-// Program main entry point
-//------------------------------------------------------------------------------------
+#include<iostream>
+
+#define WINDOW_WIDTH 800
+#define WINDOW_HEIGHT 800
+
+
 int main(void)
 {
-    // Initialization
-    //--------------------------------------------------------------------------------------
-    const int screenWidth = 800;
-    const int screenHeight = 450;
+    glfwInit();
+    GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Particl", NULL, NULL);
 
-    InitWindow(screenWidth, screenHeight, "raylib [core] example - 3d camera free");
+    bgfx::PlatformData pd;
+    pd.nwh = (void*)(uintptr_t)glfwGetX11Window(window);
+    pd.ndt = glfwGetX11Display();
 
-    // Define the camera to look into our 3d world
-    Camera3D camera = { 0 };
-    camera.position = (Vector3){ 10.0f, 10.0f, 10.0f }; // Camera position
-    camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };      // Camera looking at point
-    camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          // Camera up vector (rotation towards target)
-    camera.fovy = 45.0f;                                // Camera field-of-view Y
-    camera.projection = CAMERA_PERSPECTIVE;             // Camera projection type
+    bgfx::Init bgfxInit;
+    bgfxInit.type = bgfx::RendererType::Vulkan; // Automatically choose a renderer.
+    bgfxInit.resolution.width = WINDOW_WIDTH;
+    bgfxInit.resolution.height = WINDOW_HEIGHT;
+    bgfxInit.resolution.reset = BGFX_RESET_VSYNC;
+    bgfxInit.platformData = pd;
+    bgfx::init(bgfxInit);
 
-    Vector3 cubePosition = { 0.0f, 0.0f, 0.0f };
+    std::cout << "Successfully inited bgfx\n";
 
-    DisableCursor();                    // Limit cursor to relative movement inside the window
+    bgfx::setViewClear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x443355FF, 1.0f, 0);
+    bgfx::setViewRect(0, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
-    SetTargetFPS(60);                   // Set our game to run at 60 frames-per-second
-    //--------------------------------------------------------------------------------------
-
-    // Main game loop
-    while (!WindowShouldClose())        // Detect window close button or ESC key
-    {
-        // Update
-        //----------------------------------------------------------------------------------
-        UpdateCamera(&camera, CAMERA_FREE);
-
-        if (IsKeyPressed('Z')) camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };
-        //----------------------------------------------------------------------------------
-
-        // Draw
-        //----------------------------------------------------------------------------------
-        BeginDrawing();
-
-            ClearBackground(RAYWHITE);
-
-            BeginMode3D(camera);
-
-                DrawCube(cubePosition, 2.0f, 2.0f, 2.0f, RED);
-                DrawCubeWires(cubePosition, 2.0f, 2.0f, 2.0f, MAROON);
-
-                DrawGrid(10, 1.0f);
-
-            EndMode3D();
-
-            DrawRectangle( 10, 10, 320, 93, Fade(SKYBLUE, 0.5f));
-            DrawRectangleLines( 10, 10, 320, 93, BLUE);
-
-            DrawText("Free camera default controls:", 20, 20, 10, BLACK);
-            DrawText("- Mouse Wheel to Zoom in-out", 40, 40, 10, DARKGRAY);
-            DrawText("- Mouse Wheel Pressed to Pan", 40, 60, 10, DARKGRAY);
-            DrawText("- Z to zoom to (0, 0, 0)", 40, 80, 10, DARKGRAY);
-
-        EndDrawing();
-        //----------------------------------------------------------------------------------
+    while(!glfwWindowShouldClose(window)) {   
+        glfwPollEvents(); 
+        bgfx::touch(0);
+        bgfx::frame();
     }
 
-    // De-Initialization
-    //--------------------------------------------------------------------------------------
-    CloseWindow();        // Close window and OpenGL context
-    //--------------------------------------------------------------------------------------
+    bgfx::shutdown();
+    glfwDestroyWindow(window);
+    glfwTerminate();
 
     return 0;
 }

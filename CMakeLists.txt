@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.0)
 project(particl)
 # set(CMAKE_C_STANDARD 99)
 
+SET(COMPILE_FLAGS "-g")
+
 # Adding Raylib
 include(FetchContent)
 set(FETCHCONTENT_QUIET FALSE)
@@ -9,13 +11,13 @@ set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE) # don't build the supplied examples
 set(BUILD_GAMES    OFF CACHE BOOL "" FORCE) # don't build the supplied example games
 
 FetchContent_Declare(
-    raylib
-    GIT_REPOSITORY "https://github.com/raysan5/raylib.git"
+    bgfx
+    GIT_REPOSITORY "https://github.com/bkaradzic/bgfx.cmake.git"
     GIT_TAG "master"
     GIT_PROGRESS TRUE
 )
 
-FetchContent_MakeAvailable(raylib)
+FetchContent_MakeAvailable(bgfx)
 
 FetchContent_Declare(
     kompute
@@ -26,7 +28,18 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(kompute)
 
+FetchContent_Declare(
+    glfw
+    GIT_REPOSITORY "https://github.com/glfw/glfw.git"
+    GIT_TAG "master"
+    GIT_PROGRESS TRUE
+)
+
+FetchContent_MakeAvailable(glfw)
+
 include_directories(${kompute_SOURCE_DIR}/src/include)
+include_directories(${bgfx_SOURCE_DIR}/bgfx/include)
+include_directories(${glfw_SOURCE_DIR}/include)
 
 vulkan_compile_shader(
     INFILE src/shader.comp
@@ -44,9 +57,13 @@ set(PROJECT_INCLUDE "${CMAKE_CURRENT_LIST_DIR}/src/") # Define PROJECT_INCLUDE t
 add_executable(${PROJECT_NAME})
 target_sources(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_INCLUDE})
-target_link_libraries(${PROJECT_NAME} PRIVATE raylib)
+target_link_libraries(${PROJECT_NAME} PRIVATE bgfx)
+target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
 target_link_libraries(${PROJECT_NAME} PRIVATE shader kompute::kompute)
+target_compile_options(particl PRIVATE -g)
 
 # Setting ASSETS_PATH
 target_compile_definitions(${PROJECT_NAME} PUBLIC ASSETS_PATH="${CMAKE_CURRENT_SOURCE_DIR}/assets/") # Set the asset path macro to the absolute path on the dev machine
 #target_compile_definitions(${PROJECT_NAME} PUBLIC ASSETS_PATH="./assets") # Set the asset path macro in release mode to a relative path that assumes the assets folder is in the same directory as the game executable
+
+message(${bgfx_SOURCE_DIR}/bgfx/src/include)
