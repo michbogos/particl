@@ -39,7 +39,9 @@ FetchContent_MakeAvailable(glfw)
 
 include_directories(${kompute_SOURCE_DIR}/src/include)
 include_directories(${bgfx_SOURCE_DIR}/bgfx/include)
+include_directories(${bgfx_SOURCE_DIR}/bx/include)
 include_directories(${glfw_SOURCE_DIR}/include)
+include_directories(${CMAKE_SOURCE_DIR}/)
 
 vulkan_compile_shader(
     INFILE src/shader.comp
@@ -49,13 +51,26 @@ vulkan_compile_shader(
 add_library(shader INTERFACE "src/shader.hpp")
 target_include_directories(shader INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 
+bgfx_compile_shaders(
+  TYPE VERTEX
+  SHADERS ${CMAKE_SOURCE_DIR}/src/shader.vs
+  VARYING_DEF ${CMAKE_SOURCE_DIR}/src/varying.def.sc
+  OUTPUT_DIR ${CMAKE_SOURCE_DIR}
+)
+bgfx_compile_shaders(
+  TYPE FRAGMENT
+  VARYING_DEF ${CMAKE_SOURCE_DIR}/src/varying.def.sc
+  SHADERS ${CMAKE_SOURCE_DIR}/src/shader.fs
+  OUTPUT_DIR ${CMAKE_SOURCE_DIR}
+)
+
 # Adding our source files
 file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_LIST_DIR}/src/*.cpp") # Define PROJECT_SOURCES as a list of all source files
 set(PROJECT_INCLUDE "${CMAKE_CURRENT_LIST_DIR}/src/") # Define PROJECT_INCLUDE to be the path to the include directory of the project
 
 # Declaring our executable
 add_executable(${PROJECT_NAME})
-target_sources(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCES})
+target_sources(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCES} ${CMAKE_SOURCE_DIR}/src/shader.fs ${CMAKE_SOURCE_DIR}/src/shader.vs)
 target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_INCLUDE})
 target_link_libraries(${PROJECT_NAME} PRIVATE bgfx)
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw)

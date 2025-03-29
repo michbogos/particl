@@ -17,3 +17,4 @@ CPackSourceConfig.cmake
 shader.hpp
 launch.json
 .vscode
+*.bin
