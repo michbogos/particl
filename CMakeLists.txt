@@ -20,6 +20,15 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(bgfx)
 
 FetchContent_Declare(
+    assimp
+    GIT_REPOSITORY "https://github.com/assimp/assimp.git"
+    GIT_TAG "master"
+    GIT_PROGRESS TRUE
+)
+
+FetchContent_MakeAvailable(assimp)
+
+FetchContent_Declare(
     kompute
     GIT_REPOSITORY "https://github.com/KomputeProject/kompute.git"
     GIT_TAG "master"
@@ -40,6 +49,7 @@ FetchContent_MakeAvailable(glfw)
 include_directories(${kompute_SOURCE_DIR}/src/include)
 include_directories(${bgfx_SOURCE_DIR}/bgfx/include)
 include_directories(${bgfx_SOURCE_DIR}/bx/include)
+include_directories(${assimp_SOURCE_DIR}/include)
 include_directories(${glfw_SOURCE_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/)
 
@@ -74,6 +84,7 @@ target_sources(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCES} ${CMAKE_SOURCE_DIR}/sr
 target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_INCLUDE})
 target_link_libraries(${PROJECT_NAME} PRIVATE bgfx)
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
+target_link_libraries(${PROJECT_NAME} PRIVATE assimp)
 target_link_libraries(${PROJECT_NAME} PRIVATE shader kompute::kompute)
 target_compile_options(particl PRIVATE -g)
 

@@ -7,10 +7,15 @@
 #include <GLFW/glfw3native.h>
 
 #include<iostream>
+#include<vector>
 
 #include<string.h>
 #include<strings.h>
 #include<stdio.h>
+
+#include <assimp/Importer.hpp>      // C++ importer interface
+#include <assimp/scene.h>           // Output data structure
+#include <assimp/postprocess.h>     // Post processing flags
 
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 800
@@ -43,41 +48,68 @@ bgfx::ShaderHandle loadShader(const char *FILENAME)
 
 int main(void)
 {
+    Assimp::Importer importer;
+
+    const aiScene* scene = importer.ReadFile("assets/icosphere.obj", aiProcess_CalcTangentSpace| aiProcess_FlipWindingOrder |
+        aiProcess_Triangulate            |
+        aiProcess_JoinIdenticalVertices  |
+        aiProcess_SortByPType);
+    
     struct PosColorVertex
     {
         float x;
         float y;
         float z;
-        uint32_t abgr;
     };
 
-    static PosColorVertex cubeVertices[] =
-    {
-        {-1.0f,  1.0f,  1.0f, 0xff000000 },
-        { 1.0f,  1.0f,  1.0f, 0xff0000ff },
-        {-1.0f, -1.0f,  1.0f, 0xff00ff00 },
-        { 1.0f, -1.0f,  1.0f, 0xff00ffff },
-        {-1.0f,  1.0f, -1.0f, 0xffff0000 },
-        { 1.0f,  1.0f, -1.0f, 0xffff00ff },
-        {-1.0f, -1.0f, -1.0f, 0xffffff00 },
-        { 1.0f, -1.0f, -1.0f, 0xffffffff },
-    };
+    // static PosColorVertex cubeVertices[] =
+    // {
+    //     {-1.0f,  1.0f,  1.0f, 0xff000000 },
+    //     { 1.0f,  1.0f,  1.0f, 0xff0000ff },
+    //     {-1.0f, -1.0f,  1.0f, 0xff00ff00 },
+    //     { 1.0f, -1.0f,  1.0f, 0xff00ffff },
+    //     {-1.0f,  1.0f, -1.0f, 0xffff0000 },
+    //     { 1.0f,  1.0f, -1.0f, 0xffff00ff },
+    //     {-1.0f, -1.0f, -1.0f, 0xffffff00 },
+    //     { 1.0f, -1.0f, -1.0f, 0xffffffff },
+    // };
 
-    static const uint16_t cubeTriList[] =
-    {
-        0, 1, 2,
-        1, 3, 2,
-        4, 6, 5,
-        5, 6, 7,
-        0, 2, 4,
-        4, 2, 6,
-        1, 5, 3,
-        5, 7, 3,
-        0, 4, 1,
-        4, 5, 1,
-        2, 3, 6,
-        6, 3, 7,
-    };
+    if(scene == nullptr){
+        std::cout << "Couldn't load obj file";
+    }
+
+    aiVector3D* vertices = scene->mMeshes[0]->mVertices;
+    aiFace* faces = scene->mMeshes[0]->mFaces;
+
+    std::vector<uint16_t> modelTriList;
+    std::vector<PosColorVertex> modelVertexList;
+
+    for(int i = 0; i < scene->mMeshes[0]->mNumVertices; i++){
+        modelVertexList.push_back({vertices[i].x, vertices[i].y, vertices[i].z});
+    }
+    for(int face = 0; face < scene->mMeshes[0]->mNumFaces; face ++){
+        for(int index = 0; index < faces[face].mNumIndices; index++){
+            modelTriList.push_back(faces[face].mIndices[index]);
+        }
+    }
+
+
+
+    // static const uint16_t cubeTriList[] =
+    // {
+    //     0, 1, 2,
+    //     1, 3, 2,
+    //     4, 6, 5,
+    //     5, 6, 7,
+    //     0, 2, 4,
+    //     4, 2, 6,
+    //     1, 5, 3,
+    //     5, 7, 3,
+    //     0, 4, 1,
+    //     4, 5, 1,
+    //     2, 3, 6,
+    //     6, 3, 7,
+    // };
 
 
     glfwInit();
@@ -106,18 +138,32 @@ int main(void)
 
     unsigned int counter = 0;
 
+    bgfx::VertexLayout pcvDecl;
+    pcvDecl.begin()
+        .add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
+    .end();
+    bgfx::VertexBufferHandle vbh = bgfx::createVertexBuffer(bgfx::makeRef(vertices, modelVertexList.size()*sizeof(PosColorVertex)), pcvDecl);
+    bgfx::IndexBufferHandle ibh = bgfx::createIndexBuffer(bgfx::makeRef(modelTriList.data(), modelTriList.size()*sizeof(uint16_t)));
+
+    bgfx::InstanceDataBuffer idb;
+    bgfx::allocInstanceDataBuffer(&idb, 1000, 16);
+
+    float* data = (float*)idb.data;
+
+    for(int x = 0; x < 10; x++){
+        for(int y = 0; y < 10; y++){
+            for(int z = 0; z < 10; z++){
+                data[(100*x+10*y+z)*4+0] = float(x);
+                data[(100*x+10*y+z)*4+1] = float(y);
+                data[(100*x+10*y+z)*4+2] = float(z);
+                data[(100*x+10*y+z)*4+3] = 0;
+            }
+        }
+    }
+
     while(!glfwWindowShouldClose(window)) {   
         glfwPollEvents(); 
         bgfx::touch(0);
-        
-        bgfx::VertexLayout pcvDecl;
-        pcvDecl.begin()
-            .add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
-            .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true)
-        .end();
-        bgfx::VertexBufferHandle vbh = bgfx::createVertexBuffer(bgfx::makeRef(cubeVertices, sizeof(cubeVertices)), pcvDecl);
-        bgfx::IndexBufferHandle ibh = bgfx::createIndexBuffer(bgfx::makeRef(cubeTriList, sizeof(cubeTriList)));
-
         const bx::Vec3 at = {0.0f, 0.0f,  0.0f};
         const bx::Vec3 eye = {0.0f, 0.0f, -5.0f};
         float view[16];
@@ -132,6 +178,9 @@ int main(void)
 
         bgfx::setVertexBuffer(0, vbh);
         bgfx::setIndexBuffer(ibh);
+        bgfx::setInstanceDataBuffer(&idb);
+
+        bgfx::setState(BGFX_STATE_DEFAULT);
 
         bgfx::submit(0, program);
         bgfx::frame();
