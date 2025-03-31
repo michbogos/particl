@@ -73,6 +73,18 @@ bgfx_compile_shaders(
   SHADERS ${CMAKE_SOURCE_DIR}/src/shader.fs
   OUTPUT_DIR ${CMAKE_SOURCE_DIR}
 )
+bgfx_compile_shaders(
+  TYPE COMPUTE
+  VARYING_DEF ${CMAKE_SOURCE_DIR}/src/varying.def.sc
+  SHADERS ${CMAKE_SOURCE_DIR}/src/init.cs
+  OUTPUT_DIR ${CMAKE_SOURCE_DIR}
+)
+bgfx_compile_shaders(
+  TYPE COMPUTE
+  VARYING_DEF ${CMAKE_SOURCE_DIR}/src/varying.def.sc
+  SHADERS ${CMAKE_SOURCE_DIR}/src/simulate.cs
+  OUTPUT_DIR ${CMAKE_SOURCE_DIR}
+)
 
 # Adding our source files
 file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_LIST_DIR}/src/*.cpp") # Define PROJECT_SOURCES as a list of all source files
@@ -80,7 +92,7 @@ set(PROJECT_INCLUDE "${CMAKE_CURRENT_LIST_DIR}/src/") # Define PROJECT_INCLUDE t
 
 # Declaring our executable
 add_executable(${PROJECT_NAME})
-target_sources(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCES} ${CMAKE_SOURCE_DIR}/src/shader.fs ${CMAKE_SOURCE_DIR}/src/shader.vs)
+target_sources(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCES} ${CMAKE_SOURCE_DIR}/src/shader.fs ${CMAKE_SOURCE_DIR}/src/shader.vs ${CMAKE_SOURCE_DIR}/src/init.cs ${CMAKE_SOURCE_DIR}/src/simulate.cs)
 target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_INCLUDE})
 target_link_libraries(${PROJECT_NAME} PRIVATE bgfx)
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw)

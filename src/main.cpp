@@ -145,21 +145,37 @@ int main(void)
     bgfx::VertexBufferHandle vbh = bgfx::createVertexBuffer(bgfx::makeRef(vertices, modelVertexList.size()*sizeof(PosColorVertex)), pcvDecl);
     bgfx::IndexBufferHandle ibh = bgfx::createIndexBuffer(bgfx::makeRef(modelTriList.data(), modelTriList.size()*sizeof(uint16_t)));
 
-    bgfx::InstanceDataBuffer idb;
-    bgfx::allocInstanceDataBuffer(&idb, 1000, 16);
+    // bgfx::InstanceDataBuffer idb;
+    // bgfx::allocInstanceDataBuffer(&idb, 1000, 16);
 
-    float* data = (float*)idb.data;
+    // float* data = (float*)idb.data;
 
-    for(int x = 0; x < 10; x++){
-        for(int y = 0; y < 10; y++){
-            for(int z = 0; z < 10; z++){
-                data[(100*x+10*y+z)*4+0] = float(x);
-                data[(100*x+10*y+z)*4+1] = float(y);
-                data[(100*x+10*y+z)*4+2] = float(z);
-                data[(100*x+10*y+z)*4+3] = 0;
-            }
-        }
-    }
+    // for(int x = 0; x < 10; x++){
+    //     for(int y = 0; y < 10; y++){
+    //         for(int z = 0; z < 10; z++){
+    //             data[(100*x+10*y+z)*4+0] = float(x);
+    //             data[(100*x+10*y+z)*4+1] = float(y);
+    //             data[(100*x+10*y+z)*4+2] = float(z);
+    //             data[(100*x+10*y+z)*4+3] = 0;
+    //         }
+    //     }
+    // }
+
+    bgfx::VertexLayout computeVertexLayout;
+			computeVertexLayout.begin()
+				.add(bgfx::Attrib::TexCoord0, 4, bgfx::AttribType::Float)
+			.end();
+
+    bgfx::DynamicVertexBufferHandle positionBuffer = bgfx::createDynamicVertexBuffer(1<<15, computeVertexLayout, BGFX_BUFFER_COMPUTE_READ_WRITE);
+    bgfx::DynamicVertexBufferHandle velocityBuffer = bgfx::createDynamicVertexBuffer(1<<15, computeVertexLayout, BGFX_BUFFER_COMPUTE_READ_WRITE);
+
+    bgfx::ProgramHandle initProgram = bgfx::createProgram(loadShader("spirv/init.cs.bin"), true);
+    bgfx::ProgramHandle simulationProgram = bgfx::createProgram(loadShader("spirv/simulate.cs.bin"), true);
+
+    bgfx::setBuffer(0, positionBuffer, bgfx::Access::ReadWrite);
+    bgfx::setBuffer(1, velocityBuffer, bgfx::Access::ReadWrite);
+
+    bgfx::dispatch(0, initProgram, 1<<10, 1, 1);
 
     while(!glfwWindowShouldClose(window)) {   
         glfwPollEvents(); 
@@ -167,6 +183,7 @@ int main(void)
         const bx::Vec3 at = {0.0f, 0.0f,  0.0f};
         const bx::Vec3 eye = {0.0f, 0.0f, -5.0f};
         float view[16];
+        float transform[16];
         bx::mtxLookAt(view, eye, at);
         float proj[16];
         bx::mtxProj(proj, 60.0f, float(WINDOW_WIDTH) / float(WINDOW_HEIGHT), 0.1f, 100.0f, bgfx::getCaps()->homogeneousDepth);
@@ -174,11 +191,20 @@ int main(void)
 
         float mtx[16];
         bx::mtxRotateXY(mtx, counter * 0.01f, counter * 0.01f);
-        bgfx::setTransform(mtx); 
+        bgfx::setTransform(mtx);
 
         bgfx::setVertexBuffer(0, vbh);
         bgfx::setIndexBuffer(ibh);
-        bgfx::setInstanceDataBuffer(&idb);
+
+        bgfx::UniformHandle uniformHandle = bgfx::createUniform("time", bgfx::UniformType::Vec4, 1);
+
+        float time[4] = {counter/100.0f, counter/100.0f ,counter/100.0f, counter/100.0f}; 
+        bgfx::setUniform(uniformHandle, time, 1);
+        bgfx::setBuffer(0, positionBuffer, bgfx::Access::ReadWrite);
+        bgfx::setBuffer(1, velocityBuffer, bgfx::Access::ReadWrite);
+        bgfx::dispatch(0, simulationProgram, 1<<10, 1, 1);
+
+        bgfx::setInstanceDataBuffer(positionBuffer, 0, 1000);
 
         bgfx::setState(BGFX_STATE_DEFAULT);
 
