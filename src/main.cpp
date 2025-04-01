@@ -150,24 +150,13 @@ int main(void)
 
     // float* data = (float*)idb.data;
 
-    // for(int x = 0; x < 10; x++){
-    //     for(int y = 0; y < 10; y++){
-    //         for(int z = 0; z < 10; z++){
-    //             data[(100*x+10*y+z)*4+0] = float(x);
-    //             data[(100*x+10*y+z)*4+1] = float(y);
-    //             data[(100*x+10*y+z)*4+2] = float(z);
-    //             data[(100*x+10*y+z)*4+3] = 0;
-    //         }
-    //     }
-    // }
-
     bgfx::VertexLayout computeVertexLayout;
 			computeVertexLayout.begin()
 				.add(bgfx::Attrib::TexCoord0, 4, bgfx::AttribType::Float)
 			.end();
 
-    bgfx::DynamicVertexBufferHandle positionBuffer = bgfx::createDynamicVertexBuffer(1<<15, computeVertexLayout, BGFX_BUFFER_COMPUTE_READ_WRITE);
-    bgfx::DynamicVertexBufferHandle velocityBuffer = bgfx::createDynamicVertexBuffer(1<<15, computeVertexLayout, BGFX_BUFFER_COMPUTE_READ_WRITE);
+    bgfx::DynamicVertexBufferHandle positionBuffer = bgfx::createDynamicVertexBuffer(128*128*128*2, computeVertexLayout, BGFX_BUFFER_COMPUTE_READ_WRITE);
+    bgfx::DynamicVertexBufferHandle velocityBuffer = bgfx::createDynamicVertexBuffer(128*128*128*2, computeVertexLayout, BGFX_BUFFER_COMPUTE_READ_WRITE);
 
     bgfx::ProgramHandle initProgram = bgfx::createProgram(loadShader("spirv/init.cs.bin"), true);
     bgfx::ProgramHandle simulationProgram = bgfx::createProgram(loadShader("spirv/simulate.cs.bin"), true);
@@ -175,18 +164,20 @@ int main(void)
     bgfx::setBuffer(0, positionBuffer, bgfx::Access::ReadWrite);
     bgfx::setBuffer(1, velocityBuffer, bgfx::Access::ReadWrite);
 
-    bgfx::dispatch(0, initProgram, 1<<10, 1, 1);
+    bgfx::dispatch(0, initProgram, 32,32,32);
+
+    std::cout << "Ran shader\n";
 
     while(!glfwWindowShouldClose(window)) {   
         glfwPollEvents(); 
         bgfx::touch(0);
         const bx::Vec3 at = {0.0f, 0.0f,  0.0f};
-        const bx::Vec3 eye = {0.0f, 0.0f, -5.0f};
+        const bx::Vec3 eye = {0.0f, 0.0f, -50.0f};
         float view[16];
         float transform[16];
         bx::mtxLookAt(view, eye, at);
         float proj[16];
-        bx::mtxProj(proj, 60.0f, float(WINDOW_WIDTH) / float(WINDOW_HEIGHT), 0.1f, 100.0f, bgfx::getCaps()->homogeneousDepth);
+        bx::mtxProj(proj, 100.0f, float(WINDOW_WIDTH) / float(WINDOW_HEIGHT), 0.1f, 1000.0f, bgfx::getCaps()->homogeneousDepth);
         bgfx::setViewTransform(0, view, proj);
 
         float mtx[16];
@@ -200,11 +191,11 @@ int main(void)
 
         float time[4] = {counter/100.0f, counter/100.0f ,counter/100.0f, counter/100.0f}; 
         bgfx::setUniform(uniformHandle, time, 1);
-        bgfx::setBuffer(0, positionBuffer, bgfx::Access::ReadWrite);
-        bgfx::setBuffer(1, velocityBuffer, bgfx::Access::ReadWrite);
-        bgfx::dispatch(0, simulationProgram, 1<<10, 1, 1);
+        bgfx::setBuffer(0, positionBuffer, bgfx::Access::Write);
+        bgfx::setBuffer(1, velocityBuffer, bgfx::Access::Write);
+        bgfx::dispatch(0, simulationProgram, 32, 32, 32);
 
-        bgfx::setInstanceDataBuffer(positionBuffer, 0, 1000);
+        bgfx::setInstanceDataBuffer(positionBuffer, 0, 128*128*128);
 
         bgfx::setState(BGFX_STATE_DEFAULT);
 

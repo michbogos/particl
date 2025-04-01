@@ -18,3 +18,5 @@ shader.hpp
 launch.json
 .vscode
 *.bin
+*.json
+build
