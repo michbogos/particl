@@ -20,7 +20,7 @@
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 800
 
-#define SHADER_DIM 16
+#define SHADER_DIM 64
 #define LOCAL_DIM 8
 
 
@@ -53,7 +53,7 @@ int main(void)
 {
     Assimp::Importer importer;
 
-    const aiScene* scene = importer.ReadFile("assets/icosphere.obj", aiProcess_CalcTangentSpace| aiProcess_FlipWindingOrder |
+    const aiScene* scene = importer.ReadFile("assets/sphere_lowres.obj", aiProcess_CalcTangentSpace| aiProcess_FlipWindingOrder |
         aiProcess_Triangulate            |
         aiProcess_JoinIdenticalVertices  |
         aiProcess_SortByPType);
