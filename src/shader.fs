@@ -6,5 +6,5 @@ uniform vec4 time[1];
 
 void main()
 {
-	gl_FragColor = v_color0*abs(sin(time[0].x))+0.5;
+	gl_FragColor = v_color0;
 }

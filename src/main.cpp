@@ -20,6 +20,9 @@
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 800
 
+#define SHADER_DIM 16
+#define LOCAL_DIM 8
+
 
 
 bgfx::ShaderHandle loadShader(const char *FILENAME)
@@ -62,18 +65,6 @@ int main(void)
         float z;
     };
 
-    // static PosColorVertex cubeVertices[] =
-    // {
-    //     {-1.0f,  1.0f,  1.0f, 0xff000000 },
-    //     { 1.0f,  1.0f,  1.0f, 0xff0000ff },
-    //     {-1.0f, -1.0f,  1.0f, 0xff00ff00 },
-    //     { 1.0f, -1.0f,  1.0f, 0xff00ffff },
-    //     {-1.0f,  1.0f, -1.0f, 0xffff0000 },
-    //     { 1.0f,  1.0f, -1.0f, 0xffff00ff },
-    //     {-1.0f, -1.0f, -1.0f, 0xffffff00 },
-    //     { 1.0f, -1.0f, -1.0f, 0xffffffff },
-    // };
-
     if(scene == nullptr){
         std::cout << "Couldn't load obj file";
     }
@@ -92,25 +83,6 @@ int main(void)
             modelTriList.push_back(faces[face].mIndices[index]);
         }
     }
-
-
-
-    // static const uint16_t cubeTriList[] =
-    // {
-    //     0, 1, 2,
-    //     1, 3, 2,
-    //     4, 6, 5,
-    //     5, 6, 7,
-    //     0, 2, 4,
-    //     4, 2, 6,
-    //     1, 5, 3,
-    //     5, 7, 3,
-    //     0, 4, 1,
-    //     4, 5, 1,
-    //     2, 3, 6,
-    //     6, 3, 7,
-    // };
-
 
     glfwInit();
     GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Particl", NULL, NULL);
@@ -155,8 +127,8 @@ int main(void)
 				.add(bgfx::Attrib::TexCoord0, 4, bgfx::AttribType::Float)
 			.end();
 
-    bgfx::DynamicVertexBufferHandle positionBuffer = bgfx::createDynamicVertexBuffer(128*128*128*2, computeVertexLayout, BGFX_BUFFER_COMPUTE_READ_WRITE);
-    bgfx::DynamicVertexBufferHandle velocityBuffer = bgfx::createDynamicVertexBuffer(128*128*128*2, computeVertexLayout, BGFX_BUFFER_COMPUTE_READ_WRITE);
+    bgfx::DynamicVertexBufferHandle positionBuffer = bgfx::createDynamicVertexBuffer(SHADER_DIM*SHADER_DIM*SHADER_DIM*LOCAL_DIM*LOCAL_DIM*LOCAL_DIM, computeVertexLayout, BGFX_BUFFER_COMPUTE_READ_WRITE);
+    bgfx::DynamicVertexBufferHandle velocityBuffer = bgfx::createDynamicVertexBuffer(SHADER_DIM*SHADER_DIM*SHADER_DIM*LOCAL_DIM*LOCAL_DIM*LOCAL_DIM, computeVertexLayout, BGFX_BUFFER_COMPUTE_READ_WRITE);
 
     bgfx::ProgramHandle initProgram = bgfx::createProgram(loadShader("spirv/init.cs.bin"), true);
     bgfx::ProgramHandle simulationProgram = bgfx::createProgram(loadShader("spirv/simulate.cs.bin"), true);
@@ -164,9 +136,11 @@ int main(void)
     bgfx::setBuffer(0, positionBuffer, bgfx::Access::ReadWrite);
     bgfx::setBuffer(1, velocityBuffer, bgfx::Access::ReadWrite);
 
-    bgfx::dispatch(0, initProgram, 32,32,32);
+    bgfx::UniformHandle uniformHandle = bgfx::createUniform("uniforms", bgfx::UniformType::Vec4, 1);
+    float uniform[4] = {SHADER_DIM, 0.0f , 0.0f, counter/100.0f};
+    bgfx::setUniform(uniformHandle, uniform, 1);
 
-    std::cout << "Ran shader\n";
+    bgfx::dispatch(0, initProgram, SHADER_DIM,SHADER_DIM,SHADER_DIM);
 
     while(!glfwWindowShouldClose(window)) {   
         glfwPollEvents(); 
@@ -187,15 +161,19 @@ int main(void)
         bgfx::setVertexBuffer(0, vbh);
         bgfx::setIndexBuffer(ibh);
 
-        bgfx::UniformHandle uniformHandle = bgfx::createUniform("time", bgfx::UniformType::Vec4, 1);
-
-        float time[4] = {counter/100.0f, counter/100.0f ,counter/100.0f, counter/100.0f}; 
-        bgfx::setUniform(uniformHandle, time, 1);
+        bgfx::setUniform(uniformHandle, uniform, 1);
         bgfx::setBuffer(0, positionBuffer, bgfx::Access::Write);
         bgfx::setBuffer(1, velocityBuffer, bgfx::Access::Write);
-        bgfx::dispatch(0, simulationProgram, 32, 32, 32);
 
-        bgfx::setInstanceDataBuffer(positionBuffer, 0, 128*128*128);
+        // uniform[0] = SHADER_DIM;
+        // uniform[1] = 0.0f;
+        // uniform[2] = 0.0f;
+        uniform[3] = counter/100.0f;
+        bgfx::setUniform(uniformHandle, uniform, 1);
+
+        bgfx::dispatch(0, simulationProgram, SHADER_DIM, SHADER_DIM, SHADER_DIM);
+
+        bgfx::setInstanceDataBuffer(positionBuffer, 0, SHADER_DIM*SHADER_DIM*SHADER_DIM*LOCAL_DIM*LOCAL_DIM*LOCAL_DIM);
 
         bgfx::setState(BGFX_STATE_DEFAULT);
 
