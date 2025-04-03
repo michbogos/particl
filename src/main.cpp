@@ -20,7 +20,7 @@
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 800
 
-#define SHADER_DIM 64
+#define SHADER_DIM 32
 #define LOCAL_DIM 8
 
 
@@ -146,7 +146,7 @@ int main(void)
         glfwPollEvents(); 
         bgfx::touch(0);
         const bx::Vec3 at = {0.0f, 0.0f,  0.0f};
-        const bx::Vec3 eye = {0.0f, 0.0f, -50.0f};
+        const bx::Vec3 eye = {0.0f, 0.0f, -10.0f};
         float view[16];
         float transform[16];
         bx::mtxLookAt(view, eye, at);
@@ -175,8 +175,7 @@ int main(void)
 
         bgfx::setInstanceDataBuffer(positionBuffer, 0, SHADER_DIM*SHADER_DIM*SHADER_DIM*LOCAL_DIM*LOCAL_DIM*LOCAL_DIM);
 
-        bgfx::setState(BGFX_STATE_DEFAULT);
-
+        bgfx::setState(BGFX_STATE_DEFAULT|BGFX_STATE_PT_POINTS);
         bgfx::submit(0, program);
         bgfx::frame();
 
