@@ -20,9 +20,66 @@
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 800
 
-#define SHADER_DIM 32
+#define SHADER_DIM 1
 #define LOCAL_DIM 8
 
+bx::Vec3 direction = {0.0f, 0.0f,  -1.0f};
+bx::Vec3 rotation = {0, 0, 0};
+bx::Vec3 eye = {0.0f, 0.0f, -10.0f};
+float deltaTime = 0.0f;
+
+void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    float rot[16];
+    switch(key){
+        case GLFW_KEY_W:
+                eye.z += 0.1*deltaTime;
+            break;
+        case GLFW_KEY_S:
+            if (action == GLFW_PRESS)
+                eye.z -= 0.1*deltaTime;
+            break;
+        case GLFW_KEY_A:
+            if (action == GLFW_PRESS)
+                eye.x -= 0.1*deltaTime;
+            break;
+        case GLFW_KEY_D:
+            if (action == GLFW_PRESS)
+                eye.x += 0.1*deltaTime;
+            break;
+        case GLFW_KEY_SPACE:
+            if(action == GLFW_PRESS && !(mods&GLFW_MOD_SHIFT))
+                eye.y += 0.1*deltaTime;
+            if(action == GLFW_PRESS && (mods&GLFW_MOD_SHIFT))
+                eye.y -= 0.1*deltaTime;
+            break;
+        
+        case GLFW_KEY_UP:
+            if (action == GLFW_PRESS)
+                rotation.x += 0.01*deltaTime;
+                bx::mtxRotateXYZ(rot, rotation.x, rotation.y, rotation.z);
+                direction = bx::mul({0, 0, -1}, rot);
+            break;
+        case GLFW_KEY_DOWN:
+            if (action == GLFW_PRESS)
+                rotation.x -= 0.01*deltaTime;
+                bx::mtxRotateXYZ(rot, rotation.x, rotation.y, rotation.z);
+                direction = bx::mul({0, 0, -1}, rot);
+            break;
+        case GLFW_KEY_LEFT:
+            if (action == GLFW_PRESS)
+                rotation.y += 0.01*deltaTime;
+                bx::mtxRotateXYZ(rot, rotation.x, rotation.y, rotation.z);
+                direction = bx::mul({0, 0, -1}, rot);
+            break;
+        case GLFW_KEY_RIGHT:
+            if (action == GLFW_PRESS)
+                rotation.y -= 0.01*deltaTime;
+                bx::mtxRotateXYZ(rot, rotation.x, rotation.y, rotation.z);
+                direction = bx::mul({0, 0, -1}, rot);
+            break;
+    }
+}
 
 
 bgfx::ShaderHandle loadShader(const char *FILENAME)
@@ -86,6 +143,7 @@ int main(void)
 
     glfwInit();
     GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Particl", NULL, NULL);
+    glfwSetKeyCallback(window, keyCallback);
 
     bgfx::PlatformData pd;
     pd.nwh = (void*)(uintptr_t)glfwGetX11Window(window);
@@ -117,11 +175,6 @@ int main(void)
     bgfx::VertexBufferHandle vbh = bgfx::createVertexBuffer(bgfx::makeRef(vertices, modelVertexList.size()*sizeof(PosColorVertex)), pcvDecl);
     bgfx::IndexBufferHandle ibh = bgfx::createIndexBuffer(bgfx::makeRef(modelTriList.data(), modelTriList.size()*sizeof(uint16_t)));
 
-    // bgfx::InstanceDataBuffer idb;
-    // bgfx::allocInstanceDataBuffer(&idb, 1000, 16);
-
-    // float* data = (float*)idb.data;
-
     bgfx::VertexLayout computeVertexLayout;
 			computeVertexLayout.begin()
 				.add(bgfx::Attrib::TexCoord0, 4, bgfx::AttribType::Float)
@@ -142,21 +195,22 @@ int main(void)
 
     bgfx::dispatch(0, initProgram, SHADER_DIM,SHADER_DIM,SHADER_DIM);
 
+    float prevTime = glfwGetTime();
+
     while(!glfwWindowShouldClose(window)) {   
-        glfwPollEvents(); 
+
+        float currentTime = glfwGetTime();
+        deltaTime = currentTime - prevTime;
+        currentTime = prevTime;
+
+        glfwPollEvents();
+
         bgfx::touch(0);
-        const bx::Vec3 at = {0.0f, 0.0f,  0.0f};
-        const bx::Vec3 eye = {0.0f, 0.0f, -10.0f};
         float view[16];
-        float transform[16];
-        bx::mtxLookAt(view, eye, at);
+        bx::mtxLookAt(view, eye, bx::sub(eye,direction));
         float proj[16];
         bx::mtxProj(proj, 100.0f, float(WINDOW_WIDTH) / float(WINDOW_HEIGHT), 0.1f, 1000.0f, bgfx::getCaps()->homogeneousDepth);
         bgfx::setViewTransform(0, view, proj);
-
-        float mtx[16];
-        bx::mtxRotateXY(mtx, counter * 0.01f, counter * 0.01f);
-        bgfx::setTransform(mtx);
 
         bgfx::setVertexBuffer(0, vbh);
         bgfx::setIndexBuffer(ibh);
@@ -165,10 +219,10 @@ int main(void)
         bgfx::setBuffer(0, positionBuffer, bgfx::Access::Write);
         bgfx::setBuffer(1, velocityBuffer, bgfx::Access::Write);
 
-        // uniform[0] = SHADER_DIM;
-        // uniform[1] = 0.0f;
-        // uniform[2] = 0.0f;
-        uniform[3] = counter/100.0f;
+        uniform[0] = SHADER_DIM;
+        uniform[1] = 0.0f;
+        uniform[2] = 0.0f;
+        uniform[3] = deltaTime;
         bgfx::setUniform(uniformHandle, uniform, 1);
 
         bgfx::dispatch(0, simulationProgram, SHADER_DIM, SHADER_DIM, SHADER_DIM);
@@ -180,6 +234,8 @@ int main(void)
         bgfx::frame();
 
         counter ++;
+
+        // std::cout << direction.x << " " << direction.y << " " << direction.z;
     }
 
     bgfx::shutdown();
