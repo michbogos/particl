@@ -17,8 +17,8 @@
 #include <assimp/scene.h>           // Output data structure
 #include <assimp/postprocess.h>     // Post processing flags
 
-#define WINDOW_WIDTH 800
-#define WINDOW_HEIGHT 800
+unsigned int windowWidth = 800;
+unsigned int windowHeight = 800;
 
 #define SHADER_DIM 1
 #define LOCAL_DIM 8
@@ -81,6 +81,16 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     }
 }
 
+void framebufferSizeCallback(GLFWwindow* window, int width, int height)
+{
+    bgfx::reset(width, height, BGFX_RESET_VSYNC);
+    bgfx::setViewRect(0, 0, 0, width, height);
+    glfwSetWindowSize(window, width, height);
+    windowWidth = width;
+    windowHeight = height;
+}
+
+
 
 bgfx::ShaderHandle loadShader(const char *FILENAME)
 {
@@ -142,8 +152,10 @@ int main(void)
     }
 
     glfwInit();
-    GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Particl", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(windowWidth, windowHeight, "Particl", NULL, NULL);
     glfwSetKeyCallback(window, keyCallback);
+    glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+
 
     bgfx::PlatformData pd;
     pd.nwh = (void*)(uintptr_t)glfwGetX11Window(window);
@@ -151,8 +163,8 @@ int main(void)
 
     bgfx::Init bgfxInit;
     bgfxInit.type = bgfx::RendererType::Vulkan; // Automatically choose a renderer.
-    bgfxInit.resolution.width = WINDOW_WIDTH;
-    bgfxInit.resolution.height = WINDOW_HEIGHT;
+    bgfxInit.resolution.width = windowWidth;
+    bgfxInit.resolution.height = windowHeight;
     bgfxInit.resolution.reset = BGFX_RESET_VSYNC;
     bgfxInit.platformData = pd;
     bgfx::init(bgfxInit);
@@ -160,7 +172,7 @@ int main(void)
     std::cout << "Successfully inited bgfx\n";
 
     bgfx::setViewClear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x443355FF, 1.0f, 0);
-    bgfx::setViewRect(0, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+    bgfx::setViewRect(0, 0, 0, windowWidth, windowHeight);
 
     bgfx::ShaderHandle vsh = loadShader("spirv/shader.vs.bin");
     bgfx::ShaderHandle fsh = loadShader("spirv/shader.fs.bin");
@@ -209,7 +221,7 @@ int main(void)
         float view[16];
         bx::mtxLookAt(view, eye, bx::sub(eye,direction));
         float proj[16];
-        bx::mtxProj(proj, 100.0f, float(WINDOW_WIDTH) / float(WINDOW_HEIGHT), 0.1f, 1000.0f, bgfx::getCaps()->homogeneousDepth);
+        bx::mtxProj(proj, 100.0f, float(windowWidth) / float(windowHeight), 0.1f, 1000.0f, bgfx::getCaps()->homogeneousDepth);
         bgfx::setViewTransform(0, view, proj);
 
         bgfx::setVertexBuffer(0, vbh);
@@ -235,7 +247,6 @@ int main(void)
 
         counter ++;
 
-        // std::cout << direction.x << " " << direction.y << " " << direction.z;
     }
 
     bgfx::shutdown();
