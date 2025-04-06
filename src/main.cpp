@@ -20,8 +20,10 @@
 unsigned int windowWidth = 800;
 unsigned int windowHeight = 800;
 
-#define SHADER_DIM 1
+#define SHADER_DIM 4
 #define LOCAL_DIM 8
+#define DOMAIN_DIM 4.0f
+#define PARTICLE_SIZE ((DOMAIN_DIM)/(float(SHADER_DIM)*float(LOCAL_DIM)))
 
 bx::Vec3 direction = {0.0f, 0.0f,  -1.0f};
 bx::Vec3 rotation = {0, 0, 0};
@@ -228,12 +230,12 @@ int main(void)
         bgfx::setIndexBuffer(ibh);
 
         bgfx::setUniform(uniformHandle, uniform, 1);
-        bgfx::setBuffer(0, positionBuffer, bgfx::Access::Write);
-        bgfx::setBuffer(1, velocityBuffer, bgfx::Access::Write);
+        bgfx::setBuffer(0, positionBuffer, bgfx::Access::ReadWrite);
+        bgfx::setBuffer(1, velocityBuffer, bgfx::Access::ReadWrite);
 
         uniform[0] = SHADER_DIM;
-        uniform[1] = 0.0f;
-        uniform[2] = 0.0f;
+        uniform[1] = DOMAIN_DIM;
+        uniform[2] = PARTICLE_SIZE;
         uniform[3] = deltaTime;
         bgfx::setUniform(uniformHandle, uniform, 1);
 
@@ -241,9 +243,11 @@ int main(void)
 
         bgfx::setInstanceDataBuffer(positionBuffer, 0, SHADER_DIM*SHADER_DIM*SHADER_DIM*LOCAL_DIM*LOCAL_DIM*LOCAL_DIM);
 
-        bgfx::setState(BGFX_STATE_DEFAULT|BGFX_STATE_PT_POINTS);
+        //bgfx::setState(BGFX_STATE_DEFAULT|BGFX_STATE_PT_POINTS);
         bgfx::submit(0, program);
         bgfx::frame();
+
+        bx::swap(positionBuffer, velocityBuffer);
 
         counter ++;
 
