@@ -195,13 +195,18 @@ int main(void)
 			.end();
 
     bgfx::DynamicVertexBufferHandle positionBuffer = bgfx::createDynamicVertexBuffer(SHADER_DIM*SHADER_DIM*SHADER_DIM*LOCAL_DIM*LOCAL_DIM*LOCAL_DIM, computeVertexLayout, BGFX_BUFFER_COMPUTE_READ_WRITE);
-    bgfx::DynamicVertexBufferHandle velocityBuffer = bgfx::createDynamicVertexBuffer(SHADER_DIM*SHADER_DIM*SHADER_DIM*LOCAL_DIM*LOCAL_DIM*LOCAL_DIM, computeVertexLayout, BGFX_BUFFER_COMPUTE_READ_WRITE);
+    bgfx::DynamicVertexBufferHandle prevBuffer = bgfx::createDynamicVertexBuffer(SHADER_DIM*SHADER_DIM*SHADER_DIM*LOCAL_DIM*LOCAL_DIM*LOCAL_DIM, computeVertexLayout, BGFX_BUFFER_COMPUTE_READ_WRITE);
+    bgfx::DynamicVertexBufferHandle positionBuffer2 = bgfx::createDynamicVertexBuffer(SHADER_DIM*SHADER_DIM*SHADER_DIM*LOCAL_DIM*LOCAL_DIM*LOCAL_DIM, computeVertexLayout, BGFX_BUFFER_COMPUTE_READ_WRITE);
+    //bgfx::DynamicVertexBufferHandle prevBuffer2 = bgfx::createDynamicVertexBuffer(SHADER_DIM*SHADER_DIM*SHADER_DIM*LOCAL_DIM*LOCAL_DIM*LOCAL_DIM, computeVertexLayout, BGFX_BUFFER_COMPUTE_READ_WRITE);
 
     bgfx::ProgramHandle initProgram = bgfx::createProgram(loadShader("spirv/init.cs.bin"), true);
     bgfx::ProgramHandle simulationProgram = bgfx::createProgram(loadShader("spirv/simulate.cs.bin"), true);
 
     bgfx::setBuffer(0, positionBuffer, bgfx::Access::ReadWrite);
-    bgfx::setBuffer(1, velocityBuffer, bgfx::Access::ReadWrite);
+    bgfx::setBuffer(1, prevBuffer, bgfx::Access::ReadWrite);
+    bgfx::setBuffer(2, positionBuffer2, bgfx::Access::ReadWrite);
+    //bgfx::setBuffer(3, prevBuffer2, bgfx::Access::ReadWrite);
+
 
     bgfx::UniformHandle uniformHandle = bgfx::createUniform("uniforms", bgfx::UniformType::Vec4, 1);
     float uniform[4] = {SHADER_DIM, 0.0f , 0.0f, counter/100.0f};
@@ -231,7 +236,8 @@ int main(void)
 
         bgfx::setUniform(uniformHandle, uniform, 1);
         bgfx::setBuffer(0, positionBuffer, bgfx::Access::ReadWrite);
-        bgfx::setBuffer(1, velocityBuffer, bgfx::Access::ReadWrite);
+        bgfx::setBuffer(1, prevBuffer, bgfx::Access::ReadWrite);
+        bgfx::setBuffer(2, positionBuffer2, bgfx::Access::ReadWrite);
 
         uniform[0] = SHADER_DIM;
         uniform[1] = DOMAIN_DIM;
@@ -247,7 +253,7 @@ int main(void)
         bgfx::submit(0, program);
         bgfx::frame();
 
-        bx::swap(positionBuffer, velocityBuffer);
+        //bx::swap(positionBuffer, positionBuffer2);
 
         counter ++;
 
