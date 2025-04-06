@@ -20,9 +20,9 @@
 unsigned int windowWidth = 800;
 unsigned int windowHeight = 800;
 
-#define SHADER_DIM 4
+#define SHADER_DIM 1
 #define LOCAL_DIM 8
-#define DOMAIN_DIM 4.0f
+#define DOMAIN_DIM 16.0f
 #define PARTICLE_SIZE ((DOMAIN_DIM)/(float(SHADER_DIM)*float(LOCAL_DIM)))
 
 bx::Vec3 direction = {0.0f, 0.0f,  -1.0f};
