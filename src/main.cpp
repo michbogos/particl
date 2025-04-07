@@ -247,13 +247,13 @@ int main(void)
 
         bgfx::dispatch(0, simulationProgram, SHADER_DIM, SHADER_DIM, SHADER_DIM);
 
+        //bx::swap(positionBuffer, positionBuffer2);
+
         bgfx::setInstanceDataBuffer(positionBuffer, 0, SHADER_DIM*SHADER_DIM*SHADER_DIM*LOCAL_DIM*LOCAL_DIM*LOCAL_DIM);
 
         //bgfx::setState(BGFX_STATE_DEFAULT|BGFX_STATE_PT_POINTS);
         bgfx::submit(0, program);
         bgfx::frame();
-
-        //bx::swap(positionBuffer, positionBuffer2);
 
         counter ++;
 
