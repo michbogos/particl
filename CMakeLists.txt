@@ -37,13 +37,6 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(kompute)
 
-FetchContent_Declare(
-    glfw
-    GIT_REPOSITORY "https://github.com/glfw/glfw.git"
-    GIT_TAG "master"
-    GIT_PROGRESS TRUE
-)
-
 FetchContent_MakeAvailable(glfw)
 
 include_directories(${kompute_SOURCE_DIR}/src/include)
@@ -85,6 +78,12 @@ bgfx_compile_shaders(
   SHADERS ${CMAKE_SOURCE_DIR}/src/simulate.cs
   OUTPUT_DIR ${CMAKE_SOURCE_DIR}
 )
+bgfx_compile_shaders(
+  TYPE COMPUTE
+  VARYING_DEF ${CMAKE_SOURCE_DIR}/src/varying.def.sc
+  SHADERS ${CMAKE_SOURCE_DIR}/src/sort.cs
+  OUTPUT_DIR ${CMAKE_SOURCE_DIR}
+)
 
 # Adding our source files
 file(GLOB_RECURSE PROJECT_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_LIST_DIR}/src/*.cpp") # Define PROJECT_SOURCES as a list of all source files
@@ -97,8 +96,15 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_INCLUDE})
 target_link_libraries(${PROJECT_NAME} PRIVATE bgfx)
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
 target_link_libraries(${PROJECT_NAME} PRIVATE assimp)
-target_link_libraries(${PROJECT_NAME} PRIVATE shader kompute::kompute)
 target_compile_options(particl PRIVATE -g)
+
+add_executable(gpusort)
+target_sources(gpusort PRIVATE ${PROJECT_SOURCES} ${CMAKE_SOURCE_DIR}/src/sort.cs)
+target_include_directories(gpusort PRIVATE ${PROJECT_INCLUDE})
+target_link_libraries(gpusort PRIVATE bgfx)
+target_link_libraries(gpusort PRIVATE glfw)
+target_link_libraries(gpusort PRIVATE assimp)
+target_compile_options(gpusort PRIVATE -g)
 
 # Setting ASSETS_PATH
 target_compile_definitions(${PROJECT_NAME} PUBLIC ASSETS_PATH="${CMAKE_CURRENT_SOURCE_DIR}/assets/") # Set the asset path macro to the absolute path on the dev machine
